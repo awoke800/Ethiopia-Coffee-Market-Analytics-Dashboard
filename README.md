@@ -1,4 +1,4 @@
-# ☕ Ethiopia Coffee Market Analytics Dashboard
+# ☕ Ethiopia Coffee Market Analytics Dashboard and Dynamic upload and anlaytics dashboard
 ## 📌 Project Overview
 The Ethiopia Coffee Market Analytics Dashboard is an interactive data visualization and analytics application developed using Python,
 Streamlit, Pandas, and Plotly. The dashboard enables users to explore Ethiopian coffee market data through dynamic filters,
@@ -59,6 +59,44 @@ This dashboard helps users:
 * Identify high-performing coffee categories.
 * Explore trading volume trends.
 * Support data-driven decision making.
+ # 📁 Dynamic Data Cleaning & Analytics Dashboard
+
+An interactive **data cleaning and analytics dashboard** built with 
+**Python,
+Streamlit,
+Pandas,
+NumPy, 
+Plotly.
+
+It allows users to upload **CSV or Excel datasets**, automatically profile and clean the data, create dynamic visualizations, and download the cleaned dataset.
+
+## 🚀 Features
+
+* 📤 Upload CSV and Excel files
+* 📊 Dataset profiling
+* 🔎 Missing-value analysis
+* 🧹 Missing-value handling
+* ♻️ Duplicate-row removal
+* 📈 Dynamic data visualization
+* 📦 Bar Chart
+* 📊 Box Plot
+* 📈 Line Trend
+* 🔵 Scatter Plot
+* 📥 Download cleaned dataset
+
+## 🛠️ Technologies
+* Python
+* Streamlit
+* Pandas
+* NumPy
+* Plotly
+## 🎯 Workflow
+**Upload → Profile → Clean → Visualize → Export**
+## 👨‍💻 Developer
+**Awoke Tiruneh**
+**Bahir Dar University**
+**Data Science Student**
+
 ## 👨‍💻 Developer
 **Awoke Tiruneh**
 Data Science Student
