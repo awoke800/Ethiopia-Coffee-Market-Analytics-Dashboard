@@ -44,7 +44,7 @@ div[data-testid="stHorizontalBlock"] {
 </style>
 """, unsafe_allow_html=True)  # Apply raw CSS styles to the Streamlit app
 
-st.sidebar.title("📌 Navigation")  # Set sidebar navigation section title
+st.sidebar.title(" Navigation")  # Set sidebar navigation section title
 app_mode = st.sidebar.radio(  # Display radio selection for app operating mode
     "Select Operating dashboard:",  # Radio button selection label
     [
@@ -184,7 +184,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
     st.markdown("""
     <div style="background-color:#1B5E20; color:white; font-size:15px; font-weight:700;
     padding:6px 10px; border-radius:8px; text-align:center; margin-top:0px; margin-bottom:15px;">
-    ☕ Key Performance Indicators (KPIs) Overview
+     Key Performance Indicators (KPIs) Overview
     </div>
     """, unsafe_allow_html=True)  # Render green header bar for KPI section
 
@@ -213,19 +213,19 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
         yoy_str = "N/A"  # Fallback to N/A on exception
 
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)  # Partition layout into 8 equal width columns
-    with col1: st.metric("📦 Total Volume", f"{total_volume:,.0f} Ton")  # Render Total Volume metric
-    with col2: st.metric("💰 Avg Opening", f"{avg_opening:,.2f} ETB")  # Render Average Opening Price metric
-    with col3: st.metric("💵 Avg Closing", f"{avg_closing:,.2f} ETB")  # Render Average Closing Price metric
-    with col4: st.metric("📈 Highest Price", f"{highest_price:,.2f} ETB")  # Render Highest Price metric
-    with col5: st.metric("📉 Lowest Price", f"{lowest_price:,.2f} ETB")  # Render Lowest Price metric
-    with col6: st.metric("🏢 Warehouses", total_warehouses)  # Render Unique Warehouses metric
-    with col7: st.metric("☕ Symbols", total_symbols)  # Render Unique Coffee Symbols metric
-    with col8: st.metric("📊 YoY Growth", yoy_str)  # Render Year-over-Year Growth metric
+    with col1: st.metric(" Total Volume", f"{total_volume:,.0f} Ton")  # Render Total Volume metric
+    with col2: st.metric(" Avg Opening", f"{avg_opening:,.2f} ETB")  # Render Average Opening Price metric
+    with col3: st.metric(" Avg Closing", f"{avg_closing:,.2f} ETB")  # Render Average Closing Price metric
+    with col4: st.metric(" Highest Price", f"{highest_price:,.2f} ETB")  # Render Highest Price metric
+    with col5: st.metric(" Lowest Price", f"{lowest_price:,.2f} ETB")  # Render Lowest Price metric
+    with col6: st.metric(" Warehouses", total_warehouses)  # Render Unique Warehouses metric
+    with col7: st.metric(" Symbols", total_symbols)  # Render Unique Coffee Symbols metric
+    with col8: st.metric(" YoY Growth", yoy_str)  # Render Year-over-Year Growth metric
 
     st.markdown("""
     <div style="background-color:#8B0000; color:white; font-size:15px; font-weight:700;
     padding:8px 12px; border-radius:8px; text-align:center; margin-top:0px; margin-bottom:15px;">
-    ☕ Market insight summary
+     Market insight summary
     </div>
     """, unsafe_allow_html=True)  # Render dark red section title for market insights
 
@@ -268,7 +268,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
         top_warehouse = filtered_df.groupby("Warehouse")["Volume (Ton)"].sum().idxmax() if "Warehouse" in filtered_df.columns else "N/A" 
         # Evaluate overall price direction trend
 
-        trend = "📈 Upward" if len(yearly_price) > 1 and yearly_price["Closing Price"].iloc[-1] >= yearly_price["Closing Price"].iloc[0] else "➡️ Stable" 
+        trend = " Upward" if len(yearly_price) > 1 and yearly_price["Closing Price"].iloc[-1] >= yearly_price["Closing Price"].iloc[0] else "➡️ Stable" 
          # Calculate percentage of positive trading days
  
         gain_ratio = ((filtered_df["Change"] > 0).sum() / len(filtered_df)) * 100 if "Change" in filtered_df.columns else 0 
@@ -286,24 +286,24 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
             top_gainer_symbol, top_gainer_val = "N/A", 0  # Fallback default values
      # Create second row of 8 columns for insight cards
         c1, c2, c3, c4, c5, c6, c7, c8 = st.columns(8)  
-        with c1: create_blue_card("☕ Top Symbol", top_symbol, "Most Traded",
+        with c1: create_blue_card(" Top Symbol", top_symbol, "Most Traded",
                                   "#0F172A", "#3B82F6", "#FFFFFF", "#94A3B8")  # Top symbol insight card
-        with c2: create_blue_card("💰 Best Price Year", str(best_price_year),
+        with c2: create_blue_card(" Best Price Year", str(best_price_year),
                                   f"{highest_avg_price:,.0f} ETB", "#0F172A", 
                                   "#3B82F6", "#FFFFFF", "#94A3B8")  # Best price year insight card
-        with c3: create_blue_card("📈 Price Trend", trend, "Market Direction",
+        with c3: create_blue_card(" Price Trend", trend, "Market Direction",
                                   "#0F172A", "#3B82F6", "#FFFFFF", "#94A3B8")  # Market trend insight card
-        with c4: create_blue_card("🏢 Top Warehouse", top_warehouse, "Top Location",
+        with c4: create_blue_card(" Top Warehouse", top_warehouse, "Top Location",
                                   "#0F172A", "#3B82F6", "#FFFFFF", "#94A3B8")  # Top warehouse insight card
-        with c5: create_blue_card("🟢 Gain Ratio", f"{gain_ratio:.1f}%", "Positive Days",
+        with c5: create_blue_card(" Gain Ratio", f"{gain_ratio:.1f}%", "Positive Days",
                                   "#1E293B", "#4ADE80", "#FFFFFF", "#CBD5E1")  # Gain ratio insight card
-        with c6: create_blue_card("📦 Peak Volume Year", str(peak_vol_year),
+        with c6: create_blue_card(" Peak Volume Year", str(peak_vol_year),
                                   f"{peak_volume:,.0f} Ton", "#1E293B",
                                   "#60A5FA", "#FFFFFF", "#CBD5E1")  # Peak volume year insight card
-        with c7: create_blue_card("🗓️ Peak Month", str(peak_month),
+        with c7: create_blue_card(" Peak Month", str(peak_month),
                                   "Highest Avg Price", "#1E293B",
                                   "#60A5FA", "#FFFFFF", "#CBD5E1")  # Peak month insight card
-        with c8: create_blue_card("🚀 Top Gainer", top_gainer_symbol,
+        with c8: create_blue_card(" Top Gainer", top_gainer_symbol,
                                   f"+{top_gainer_val:.2f}% Avg", "#1E293B", "#22C55E",
                                   "#FFFFFF", "#CBD5E1")  # Top gainer insight card
     else:  # If dataset empty
@@ -313,7 +313,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
     
     with col1:  # 1. Bar Chart: Top Traded Coffee Symbols
         top_symbols = filtered_df.groupby("Symbol")["Volume (Ton)"].sum().reset_index().sort_values("Volume (Ton)", ascending=False).head(10) if not filtered_df.empty else pd.DataFrame()  # Extract top 10 symbols by volume
-        fig_symbol = px.bar(top_symbols, x="Symbol", y="Volume (Ton)", title="☕ Top Symbols")  # Create bar chart instance
+        fig_symbol = px.bar(top_symbols, x="Symbol", y="Volume (Ton)", title=" Top Symbols")  # Create bar chart instance
         fig_symbol.update_layout(template="plotly_white", height=200, margin=dict(t=40, b=5, l=0, r=0),
                                  plot_bgcolor="#F5F1E8", paper_bgcolor="#F5F1E8", showlegend=False,
                                  title_x=0.25,  # Customize layout
@@ -324,7 +324,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
     with col2:  # 2. Bar Chart: Yearly Price Distribution
         yearly_market = filtered_df.groupby("Year").agg({"Closing Price": "mean", "Volume (Ton)": "sum"}).reset_index() if not filtered_df.empty else pd.DataFrame()  # Group by year and calculate aggregations
         fig_yearly = px.bar(yearly_market, x="Year", y="Closing Price",
-                            title="📅 Yearly Price")  # Create bar chart instance
+                            title="Yearly Price")  # Create bar chart instance
         fig_yearly.update_layout(template="plotly_white", height=200,
                                  margin=dict(t=40, b=5, l=0, r=0), plot_bgcolor="#F5F1E8",
                                  paper_bgcolor="#F5F1E8", showlegend=False, title_x=0.25)  # Customize layout
@@ -336,7 +336,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
         if not temp_df.empty and "Trade Date" in temp_df.columns:  # Check if Trade Date exists
             temp_df["Trade Date"] = pd.to_datetime(temp_df["Trade Date"], errors="coerce")  # Convert column to datetime
             monthly_p = temp_df.dropna(subset=["Trade Date"]).set_index("Trade Date").resample("ME")["Closing Price"].mean().reset_index()  # Resample monthly average
-            fig_price = px.line(monthly_p, x="Trade Date", y="Closing Price", title="📈 Price Trend")  # Create line chart instance
+            fig_price = px.line(monthly_p, x="Trade Date", y="Closing Price", title=" Price Trend")  # Create line chart instance
             fig_price.update_layout(template="plotly_white", height=200, margin=dict(t=40, b=20, l=0, r=0),
                                     plot_bgcolor="#F5F1E8", paper_bgcolor="#F5F1E8", title_x=0.25)  # Customize layout
             fig_price.update_traces(line=dict(color="#121212", width=2))  # Set line width and color
@@ -344,7 +344,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
 
     with col4:  # 4. Bar Chart: Warehouse Volume Distribution
         warehouse_volume = filtered_df.groupby("Warehouse")["Volume (Ton)"].sum().reset_index().sort_values("Volume (Ton)", ascending=False) if not filtered_df.empty else pd.DataFrame()  # Aggregate volume by warehouse
-        fig_warehouse = px.bar(warehouse_volume, x="Warehouse", y="Volume (Ton)", title="🏭 Warehouse Volume")  # Create bar chart instance
+        fig_warehouse = px.bar(warehouse_volume, x="Warehouse", y="Volume (Ton)", title=" Warehouse Volume")  # Create bar chart instance
         fig_warehouse.update_layout(template="plotly_white", height=200, margin=dict(t=40, b=5, l=0, r=0), 
                                     plot_bgcolor="#F5F1E8", 
                                     paper_bgcolor="#F5F1E8", title_x=0.2)  # Customize layout
@@ -362,7 +362,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
                                               var_name="Price Type", value_name="Price (ETB)")  # Unpivot DataFrame for multi-line plot
                                 # Multi-line plot
             fig_high_low = px.line(df_melted, x="Trade Date", y="Price (ETB)", color="Price Type",
-                                   title="📈 High vs Low", color_discrete_map={"High":"#2A9D8F", "Low": "#C87D55"})  
+                                   title=" High vs Low", color_discrete_map={"High":"#2A9D8F", "Low": "#C87D55"})  
             fig_high_low.update_layout(template="plotly_white",
                                        height=200, plot_bgcolor="#F5F1E8", 
                                        paper_bgcolor="#F5F1E8", title_x=0.15,
@@ -376,7 +376,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
             df_vol["Trade Date"] = pd.to_datetime(df_vol["Trade Date"], errors="coerce")  # Parse dates
             df_vol["Year"] = df_vol["Trade Date"].dt.year  # Extract year component
             df_y_vol = df_vol.groupby("Year")["Volume (Ton)"].sum().reset_index()  # Aggregate annual volume
-            fig_y_vol = px.bar(df_y_vol, x="Year", y="Volume (Ton)", title="📦 Volume Trend")  # Create bar chart instance
+            fig_y_vol = px.bar(df_y_vol, x="Year", y="Volume (Ton)", title=" Volume Trend")  # Create bar chart instance
             fig_y_vol.update_layout(template="plotly_white", height=200, plot_bgcolor="#FAF6EE", 
                                     # Customize layout
                                     paper_bgcolor="#FAF6EE", title_x=0.15, margin=dict(t=40, b=5, l=0, r=0))  
@@ -396,7 +396,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
             m_pattern = m_pattern.sort_values("Month_Name")  # Sort DataFrame by month order
             # Create line chart with markers
             fig_season = px.line(m_pattern, x="Month_Name", y="Closing Price",
-                                 markers=True, title="📅 Seasonality")  
+                                 markers=True, title="Seasonality")  
             fig_season.update_traces(line=dict(color="#2C1D11", width=2))  # Customize line properties
              # Customize layout
             fig_season.update_layout(template="plotly_white", height=200, plot_bgcolor="#F5F1E8",
@@ -414,7 +414,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
                 top_g_df = df_g.groupby("Symbol")["Percentage Change (%)"].mean().reset_index().sort_values("Percentage Change (%)", ascending=True).tail(5)  # Get top 5 gainers
                 # Create horizontal bar chart
                 fig_g = px.bar(top_g_df, x="Percentage Change (%)", y="Symbol", orientation="h",
-                               title="🚀 Top 5 Gainers (%)")  
+                               title=" Top 5 Gainers (%)")  
                 fig_g.update_traces(marker_color="#4A2E19", texttemplate="%{x:.2f}%", textposition="outside")  # Format bar text labels
                 # Customize layout
                 fig_g.update_layout(template="plotly_white", height=200, plot_bgcolor="#F5F1E8", 
@@ -427,7 +427,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
     st.markdown("""
     <div style="background-color: #4A2C11; color:white; font-size:15px; font-weight:700;
     padding:8px 12px; border-radius:8px; text-align:center; margin-top:15px; margin-bottom:15px;">
-    ☕ 3-Year Price Forecast Model
+     3-Year Price Forecast Model
     </div>
     """, unsafe_allow_html=True)  # Render forecasting section banner title
 
@@ -463,7 +463,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
                                                name="3-Year Forecast", line=dict(color="#E67E22", width=2, dash="dot")))  
 
                 fig_trend.update_layout(  # Set forecast figure styling and layout dimensions
-                    title="📈 Coffee Price Trend --- 3-Year Forecast",
+                    title=" Coffee Price Trend --- 3-Year Forecast",
                     margin=dict(l=10, r=10, t=40, b=10),
                     height=280,
                     template="plotly_white",
