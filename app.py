@@ -3,7 +3,9 @@ import pandas as pd  # Import Pandas for data manipulation and analysis
 import numpy as np  # Import NumPy for numerical calculations
 import plotly.express as px  # Import Plotly Express for quick interactive charts
 import plotly.graph_objects as go  # Import Plotly Graph Objects for custom charts
-
+import numpy as np
+from plotly.subplots import make_subplots
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
 # Configure page settings (title, tab icon, and layout behavior)
 st.set_page_config(
     page_title="Ethiopia Coffee Market Dashboard",  # Set the title shown on browser tab
@@ -541,13 +543,7 @@ else:  # If user selects Mode 2 (Dynamic Upload & Analytics Engine)
     """,
         unsafe_allow_html=True,  # Enable HTML rendering
     )
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from statsmodels.tsa.holtwinters import ExponentialSmoothing
-import streamlit as st
+
 
 # Configure the main Streamlit application layout and page title
 st.set_page_config(
