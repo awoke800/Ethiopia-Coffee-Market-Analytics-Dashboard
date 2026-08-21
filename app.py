@@ -49,7 +49,7 @@ app_mode = st.sidebar.radio(  # Display radio selection for app operating mode
     "Select Operating dashboard:",  # Radio button selection label
     [
         "☕ dashboard 1: Ethiopia Coffee Market Analytics",  # First application mode option
-        "📁 dashboard 2: Dynamic Upload & Analytics Engine",  # Second application mode option
+        "📁 dashboard 2: Dynamic Upload & Analytics dashboard",  # Second application mode option
     ],
 )
 st.sidebar.markdown("---")  # Add horizontal separator line in sidebar
@@ -187,6 +187,8 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
      Key Performance Indicators (KPIs) Overview
     </div>
     """, unsafe_allow_html=True)  # Render green header bar for KPI section
+    
+      ## kpi
 
     if not filtered_df.empty:  # Compute aggregations if filtered dataset is non-empty
         total_volume = filtered_df["Volume (Ton)"].sum() if "Volume (Ton)" in filtered_df.columns else 0  # Calculate total volume
@@ -221,6 +223,8 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
     with col6: st.metric(" Warehouses", total_warehouses)  # Render Unique Warehouses metric
     with col7: st.metric(" Symbols", total_symbols)  # Render Unique Coffee Symbols metric
     with col8: st.metric(" YoY Growth", yoy_str)  # Render Year-over-Year Growth metric
+    
+    ## insights
 
     st.markdown("""
     <div style="background-color:#8B0000; color:white; font-size:15px; font-weight:700;
@@ -284,7 +288,9 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
             top_gainer_val = avg_gain.max() if not avg_gain.empty else 0  # Highest average gain value
         else:  # If column absent
             top_gainer_symbol, top_gainer_val = "N/A", 0  # Fallback default values
+            
      # Create second row of 8 columns for insight cards
+     
         c1, c2, c3, c4, c5, c6, c7, c8 = st.columns(8)  
         with c1: create_blue_card(" Top Symbol", top_symbol, "Most Traded",
                                   "#0F172A", "#3B82F6", "#FFFFFF", "#94A3B8")  # Top symbol insight card
@@ -308,6 +314,8 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
                                   "#FFFFFF", "#CBD5E1")  # Top gainer insight card
     else:  # If dataset empty
         st.warning("⚠️ No data available for selected filters.")  # Display warning alert message
+        
+        ## Visualizations
 
     col1, col2, col3, col4 = st.columns(4)  # Create 4 columns for first row of charts
     
@@ -423,7 +431,25 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
                    
                         
                 st.plotly_chart(fig_g, use_container_width=True, config={"displayModeBar": False})  # Display chart
+                
+    with st.expander("2️⃣ Year vs Warehouse", expanded=False):
 
+                   cross_tab_2 = pd.pivot_table(
+                       filtered_df,
+                       index="Year",
+                       columns="Warehouse",
+                       values="Volume (Ton)",
+                       aggfunc="sum",
+                       fill_value=0
+                )
+
+                   st.dataframe(
+                   cross_tab_2,
+                   use_container_width=True
+                )
+                
+               ### Forecasting section    
+                
     st.markdown("""
     <div style="background-color: #4A2C11; color:white; font-size:15px; font-weight:700;
     padding:8px 12px; border-radius:8px; text-align:center; margin-top:15px; margin-bottom:15px;">
@@ -473,7 +499,7 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
                 st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})  # Display forecast chart
             else:  # If dataset has fewer than 6 monthly observations
                 st.info("At least 6 months of historical data is required for the 3-year forecast.")  # Display information notice
-
+           ## Executive Summary and Dataset Table
     with st.expander("📌 Executive Summary", expanded=False):  # Create collapsable expander for executive summary
         if not filtered_df.empty:  # If dataset non-empty
             st.write(f"""
@@ -499,6 +525,8 @@ if app_mode == "☕ dashboard 1: Ethiopia Coffee Market Analytics":  # If user s
             )
         else:  # If data missing
             st.warning("No data available to display or download.")  # Display warning notice
+            
+            ## Dynamic EDA and Outlier treatment section (Dynamic upload and analytics dashboard)
 
 else:  # If user selects Mode 2 (Dynamic Upload & Analytics Engine)
     st.markdown(  # Render top header banner for Mode 2 using custom HTML
@@ -513,98 +541,688 @@ else:  # If user selects Mode 2 (Dynamic Upload & Analytics Engine)
     """,
         unsafe_allow_html=True,  # Enable HTML rendering
     )
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+import streamlit as st
 
-    st.sidebar.header("📁 File Upload Options")  # Set sidebar upload section header
-    
-    uploaded_file = st.sidebar.file_uploader("Upload dataset (.csv or .xlsx)",
-                                             type=["csv", "xlsx"]) 
-    if uploaded_file is not None:  # If user uploaded a valid file
-        try:  # Try block to read user dataset
-            if uploaded_file.name.endswith(".csv"):  # Handle CSV file upload
-                raw_df = pd.read_csv(uploaded_file)  # Load CSV dataset into DataFrame
-            else:  # Handle Excel file upload
-                raw_df = pd.read_excel(uploaded_file)  # Load Excel dataset into DataFrame
+# Configure the main Streamlit application layout and page title
+st.set_page_config(
+    page_title="Dynamic Analytics Dashboard", page_icon="📊", layout="wide"
+)
 
-            st.success(f"Successfully loaded `{uploaded_file.name}`")  # Show success feedback alert
+# Render the sidebar title for file uploading
+st.sidebar.header("📁 File Upload Options")
 
-            st.subheader("1. Dataset Profiling Overview")  # Render dataset profiling section title
-            m1, m2, m3, m4 = st.columns(4)  # Create 4 columns for dataset metrics
-            m1.metric("Total Rows", raw_df.shape[0])  # Display row count
-            m2.metric("Total Columns", raw_df.shape[1])  # Display column count
-            m3.metric("Missing Values", raw_df.isnull().sum().sum())  # Display total missing cells count
-            m4.metric("Duplicate Rows", raw_df.duplicated().sum())  # Display duplicate rows count
+# Display file uploader accepting CSV and Excel file types
+uploaded_file = st.sidebar.file_uploader(
+    "Upload dataset (.csv or .xlsx)",
+    type=["csv", "xlsx"],
+    key="dataset_file_uploader",
+)
 
-            with st.expander("📋 View Raw Data Preview", expanded=True):  # Expander for raw dataset preview
-                st.dataframe(raw_df.head(10), use_container_width=True)  # Display first 10 rows of raw dataset
+# Process the data only when a file has been uploaded
+if uploaded_file is not None:
+    try:
+        # Check if the uploaded file is a CSV format
+        if uploaded_file.name.endswith(".csv"):
+            raw_df = pd.read_csv(uploaded_file)  # Load CSV dataset into pandas
+        else:
+            raw_df = pd.read_excel(
+                uploaded_file
+            )  # Load Excel dataset into pandas
 
-            st.subheader("2. Automated Data Cleaning Engine")  # Render data cleaning section title
-            clean_df = raw_df.copy()  # Create working copy for data transformation
+        # Show a success notification with the file name
+        st.success(f"Successfully loaded `{uploaded_file.name}`")
 
-            col_c1, col_c2 = st.columns(2)  # Create 2 layout columns for cleaning controls
-            
-            with col_c1:  # Column 1: Missing values treatment strategy
-                st.markdown("**Handling Missing Values:**")  # Section sublabel
-                null_strategy = st.selectbox(  # Dropdown for selecting missing value strategy
-                    "Choose Strategy for Missing Values:",
-                    ["None", "Drop Rows with Missing Values", "Impute Numeric (Mean)", "Impute Numeric (Median)"]
+        # Create a deep copy of the raw dataframe for data cleaning operations
+        clean_df = raw_df.copy(deep=True)
+
+        # Create two columns layout for data cleaning controls
+        col_c1, col_c2 = st.columns(2)
+
+        # First column for missing value handling strategies
+        with col_c1:
+            st.markdown("**Handling Missing Values:**")  # Subheading
+            null_strategy = st.selectbox(
+                "Choose Strategy for Missing Values:",  # Select dropdown for missing value strategies
+                [
+                    "None",
+                    "Drop Rows with Missing Values",
+                    "Impute Numeric (Mean)",
+                    "Impute Numeric (Median)",
+                ],
+                key="missing_value_strategy_select",
+            )
+            # Drop all rows that contain missing values
+            if null_strategy == "Drop Rows with Missing Values":
+                clean_df = clean_df.dropna()
+            # Replace missing numeric values with the column mean
+            elif null_strategy == "Impute Numeric (Mean)":
+                num_cols = clean_df.select_dtypes(include=[np.number]).columns
+                clean_df[num_cols] = clean_df[num_cols].fillna(
+                    clean_df[num_cols].mean()
                 )
-                if null_strategy == "Drop Rows with Missing Values":  # Strategy: Drop missing values
-                    clean_df = clean_df.dropna()  # Drop rows with null values
-                elif null_strategy == "Impute Numeric (Mean)":  # Strategy: Mean imputation
-                    num_cols = clean_df.select_dtypes(include=[np.number]).columns  # Identify numeric columns
-                    clean_df[num_cols] = clean_df[num_cols].fillna(clean_df[num_cols].mean())  # Impute missing with mean
-                elif null_strategy == "Impute Numeric (Median)":  # Strategy: Median imputation
-                    num_cols = clean_df.select_dtypes(include=[np.number]).columns  # Identify numeric columns
-                    clean_df[num_cols] = clean_df[num_cols].fillna(clean_df[num_cols].median())  # Impute missing with median
+            # Replace missing numeric values with the column median
+            elif null_strategy == "Impute Numeric (Median)":
+                num_cols = clean_df.select_dtypes(include=[np.number]).columns
+                clean_df[num_cols] = clean_df[num_cols].fillna(
+                    clean_df[num_cols].median()
+                )
 
-            with col_c2:  # Column 2: Deduplication control
-                st.markdown("**Duplicate & Type Management:**")  # Section sublabel
-                remove_dupes = st.checkbox("Remove Duplicate Rows automatically", value=True)  # Checkbox control for deduplication
-                if remove_dupes:  # If checkbox selected
-                    clean_df = clean_df.drop_duplicates()  # Drop duplicate rows
+        # Second column for duplicate row removal
+        with col_c2:
+            st.markdown("**Duplicate Management:**")  # Subheading
+            remove_dupes = st.checkbox(
+                "Remove Duplicate Rows automatically",  # Checkbox to trigger duplicate removal
+                value=True,
+                key="remove_duplicates_checkbox",
+            )
+            if remove_dupes:
+                clean_df = (
+                    clean_df.drop_duplicates()
+                )  # Drop duplicate records from dataframe
 
-            st.info(f"Updated Shape after Cleaning: **{clean_df.shape[0]} rows × {clean_df.shape[1]} columns**")  # Display updated shape summary
+        # Extract numeric column names into a list
+        numeric_columns = clean_df.select_dtypes(
+            include=[np.number]
+        ).columns.tolist()
 
-            st.subheader("3. Dynamic Visualizations & Insights")  # Render dynamic charts section title
+        # Extract categorical column names into a list
+        categorical_columns = clean_df.select_dtypes(
+            include=["object", "category"]
+        ).columns.tolist()
 
-            numeric_columns = clean_df.select_dtypes(include=[np.number]).columns.tolist()  # Collect list of numeric column names
-            categorical_columns = clean_df.select_dtypes(include=["object", "category"]).columns.tolist()  # Collect list of categorical column names
+        # Section 1 Header for dataset overview
+        st.subheader("1. Dataset Overview & Key Performance Indicators")
 
-            if numeric_columns and categorical_columns:  # Ensure both categorical and numeric features exist
-                v1, v2, v3 = st.columns(3)  # Create 3 columns for chart control dropdowns
-                with v1:
-                    x_var = st.selectbox("Select X-Axis (Categorical):", categorical_columns)  # Dropdown for X-axis variable
-                with v2:
-                    y_var = st.selectbox("Select Y-Axis (Numeric):", numeric_columns)  # Dropdown for Y-axis variable
-                with v3:
-                    chart_kind = st.selectbox("Chart Type:", ["Bar Chart", "Box Plot (Outliers)", "Line Trend", "Scatter Plot"])  # Dropdown for chart type selection
+        # Create 4 columns for displaying raw overview KPIs
+        p1, p2, p3, p4 = st.columns(4)
+        p1.metric(
+            "Total Rows", f"{raw_df.shape[0]:,}"
+        )  # Display total row count
+        p2.metric(
+            "Total Columns", f"{raw_df.shape[1]:,}"
+        )  # Display total column count
+        p3.metric(
+            "Missing Values", f"{raw_df.isnull().sum().sum():,}"
+        )  # Display total null count
+        p4.metric(
+            "Duplicate Rows", f"{raw_df.duplicated().sum():,}"
+        )  # Display total duplicate count
 
-                if chart_kind == "Bar Chart":  # Handle Bar Chart option
-                    fig_dyn = px.bar(clean_df, x=x_var, y=y_var, color=x_var, title=f"{y_var} aggregated by {x_var}")  # Generate aggregated bar chart
-                elif chart_kind == "Box Plot (Outliers)":  # Handle Box Plot option
-                    fig_dyn = px.box(clean_df, x=x_var, y=y_var, color=x_var, title=f"Outlier & Distribution Analysis: {y_var}")  # Generate distribution box plot
-                elif chart_kind == "Line Trend":  # Handle Line Trend option
-                    fig_dyn = px.line(clean_df, x=x_var, y=y_var, title=f"{y_var} trend across {x_var}")  # Generate trend line chart
-                else:  # Handle Scatter Plot option
-                    fig_dyn = px.scatter(clean_df, x=x_var, y=y_var, color=x_var, title=f"Correlation Scatter Plot: {x_var} vs {y_var}")  # Generate correlation scatter plot
+        st.markdown("---")  # Horizontal divider line
 
-                fig_dyn.update_layout(template="plotly_white", height=380)  # Apply layout styling and fixed height
-                st.plotly_chart(fig_dyn, use_container_width=True)  # Display dynamic chart instance
-
-            else:  # If dataset lacks required data types
-                st.warning("Your dataset needs at least one Numeric column and one Categorical column for automated charting.")  # Show data requirement warning
-
-            st.subheader("4. Export Structured Data")  # Render data export section title
-            cleaned_csv = clean_df.to_csv(index=False).encode("utf-8")  # Convert processed DataFrame to CSV bytes
-            st.download_button(  # Render download button component for cleaned dataset
-                label="📥 Download Cleaned Dataset (.CSV)",
-                data=cleaned_csv,
-                file_name="cleaned_dataset.csv",
-                mime="text/csv",
+        # Calculate and display metrics if numeric columns exist
+        if numeric_columns:
+            selected_kpi_col = st.selectbox(
+                "Select Metric Column for Summary KPIs:",  # Select box for chosen metric
+                numeric_columns,
+                key="combined_kpi_select",
             )
 
-        except Exception as err:  # Catch file processing exceptions
-            st.error(f"Error processing file: {err}")  # Display detailed error message
+            # Compute key summary statistics for the chosen numeric column
+            total_val = clean_df[selected_kpi_col].sum()  # Calculate total sum
+            avg_val = (
+                clean_df[selected_kpi_col].mean()
+            )  # Calculate average mean
+            max_val = clean_df[selected_kpi_col].max()  # Find maximum value
+            min_val = clean_df[selected_kpi_col].min()  # Find minimum value
+            count_val = clean_df[
+                selected_kpi_col
+            ].count()  # Count non-null items
 
-    else:  # If no file uploaded
-        st.info("👆 Please upload a `.csv` or `.xlsx` file from the sidebar panel to activate the Dynamic Analytics Engine.")  # Show prompt instruction message
+            # Render summary metrics across 5 columns
+            k1, k2, k3, k4, k5 = st.columns(5)
+            k1.metric("🔢 Total Count", f"{count_val:,.0f}")  # Display count
+            k2.metric("➕ Total Sum", f"{total_val:,.2f}")  # Display sum
+            k3.metric("📈 Average (Mean)", f"{avg_val:,.2f}")  # Display average
+            k4.metric("⬆️ Maximum", f"{max_val:,.2f}")  # Display max
+            k5.metric("⬇️ Minimum", f"{min_val:,.2f}")  # Display min
+        else:
+            st.warning(
+                "No numeric columns found for metric calculation."
+            )  # Display warning if no numbers found
+
+        # Section 2 Header for Cross-Tabulation
+        st.subheader("2. Automated Cross-Tabulation Analysis")
+
+        # Wrap Cross-Tabulation inside a collapsed expander panel
+        with st.expander(
+            "🔍 Open / Collapse Cross-Tabulation Analysis", expanded=False
+        ):
+            # Check if at least 2 categorical columns are present
+            if len(categorical_columns) >= 2:
+                ct_col1, ct_col2, ct_col3 = st.columns(
+                    3
+                )  # Create 3 columns for inputs
+                with ct_col1:
+                    row_var = st.selectbox(
+                        "Select Row Variable (Categorical):",  # Select row categorical feature
+                        categorical_columns,
+                        index=0,
+                        key="crosstab_row_variable_select",
+                    )
+                with ct_col2:
+                    col_var = st.selectbox(
+                        "Select Column Variable (Categorical):",  # Select column categorical feature
+                        [c for c in categorical_columns if c != row_var],
+                        index=0,
+                        key="crosstab_col_variable_select",
+                    )
+                with ct_col3:
+                    agg_func = st.selectbox(
+                        "Aggregation Type:",  # Select calculation aggregation
+                        ["Count (Frequency)", "Percentage (%)"],
+                        key="crosstab_agg_func_select",
+                    )
+
+                # Compute frequency count crosstab
+                if agg_func == "Count (Frequency)":
+                    ct_df = pd.crosstab(
+                        clean_df[row_var],
+                        clean_df[col_var],
+                        margins=True,
+                        margins_name="Total",
+                    )
+                # Compute percentage breakdown crosstab
+                else:
+                    ct_df = (
+                        pd.crosstab(
+                            clean_df[row_var],
+                            clean_df[col_var],
+                            normalize="index",
+                        )
+                        * 100
+                    ).round(2)
+
+                # Render cross-tabulation table in Streamlit
+                st.dataframe(ct_df, use_container_width=True)
+
+                # Create heat map matrix plot for categorical cross-tabulation
+                fig_ct = px.imshow(
+                    pd.crosstab(clean_df[row_var], clean_df[col_var]),
+                    text_auto=True,
+                    color_continuous_scale="Viridis",
+                    title=f"Heatmap: {row_var} vs {col_var}",
+                )
+                fig_ct.update_layout(height=350)  # Adjust figure height
+                st.plotly_chart(
+                    fig_ct, use_container_width=True
+                )  # Render heatmap chart
+            else:
+                st.warning(
+                    "Automatic Cross-Tabulation requires at least 2 categorical columns."
+                )  # Show warning
+
+        # Section 3 Header for Interactive Visualizations
+        st.subheader("3. Dynamic Visualizations")
+
+        # Check if dataset contains necessary features for plotting
+        if numeric_columns and categorical_columns:
+            v1, v2, v3 = st.columns(3)  # Create 3 columns for select controls
+            with v1:
+                x_var = st.selectbox(
+                    "Select Primary Variable (Categorical / X-Axis):",  # Select X-axis variable
+                    categorical_columns,
+                    key="dynamic_chart_x_var_select",
+                )
+            with v2:
+                y_var = st.selectbox(
+                    "Select Primary Metric (Numeric / Y-Axis):",  # Select Y-axis variable
+                    numeric_columns,
+                    key="dynamic_chart_y_var_select",
+                )
+            with v3:
+                chart_kind = st.selectbox(
+                    "Chart Type:",  # Select chart visual style
+                    [
+                        "Bar Chart",
+                        "Box Plot (Outliers)",
+                        "Line Trend",
+                        "Scatter Plot",
+                        "Pie Chart",
+                        "Heatmap Matrix",
+                        "Dual-Axis Chart",
+                    ],
+                    key="dynamic_chart_type_select",
+                )
+
+            # Build selected Bar Chart model
+            if chart_kind == "Bar Chart":
+                fig_dyn = px.bar(
+                    clean_df,
+                    x=x_var,
+                    y=y_var,
+                    color=x_var,
+                    title=f"{y_var} aggregated by {x_var}",
+                )
+            # Build selected Box Plot model
+            elif chart_kind == "Box Plot (Outliers)":
+                fig_dyn = px.box(
+                    clean_df,
+                    x=x_var,
+                    y=y_var,
+                    color=x_var,
+                    title=f"Outlier & Distribution Analysis: {y_var}",
+                )
+            # Build selected Line Trend model
+            elif chart_kind == "Line Trend":
+                fig_dyn = px.line(
+                    clean_df, x=x_var, y=y_var, title=f"{y_var} trend across {x_var}"
+                )
+            # Build selected Scatter Plot model
+            elif chart_kind == "Scatter Plot":
+                fig_dyn = px.scatter(
+                    clean_df,
+                    x=x_var,
+                    y=y_var,
+                    color=x_var,
+                    title=f"Correlation Scatter Plot: {x_var} vs {y_var}",
+                )
+            # Build selected Pie Chart model
+            elif chart_kind == "Pie Chart":
+                pie_df = clean_df.groupby(x_var)[y_var].sum().reset_index()
+                fig_dyn = px.pie(
+                    pie_df,
+                    names=x_var,
+                    values=y_var,
+                    title=f"Proportional Share of {y_var} by {x_var}",
+                    hole=0.3,
+                )
+            # Build selected Heatmap Matrix model
+            elif chart_kind == "Heatmap Matrix":
+                other_cats = [c for c in categorical_columns if c != x_var]
+                if other_cats:
+                    secondary_cat = st.selectbox(
+                        "Select Secondary Category (Y-Axis):",  # Select Y-axis secondary category
+                        other_cats,
+                        key="heatmap_secondary_cat_select",
+                    )
+                    heatmap_df = pd.crosstab(
+                        clean_df[x_var],
+                        clean_df[secondary_cat],
+                        values=clean_df[y_var],
+                        aggfunc="mean",
+                    ).fillna(0)
+                    fig_dyn = px.imshow(
+                        heatmap_df,
+                        labels=dict(
+                            x=secondary_cat, y=x_var, color=f"Avg {y_var}"
+                        ),
+                        title=(
+                            f"Heatmap Matrix: Average {y_var} across {x_var} &"
+                            f" {secondary_cat}"
+                        ),
+                        color_continuous_scale="Viridis",
+                        text_auto=True,
+                    )
+                else:
+                    st.warning(
+                        "Heatmap requires at least 2 categorical columns in the dataset."
+                    )
+                    fig_dyn = px.bar(clean_df, x=x_var, y=y_var)
+            # Build selected Dual-Axis Chart model
+            elif chart_kind == "Dual-Axis Chart":
+                other_nums = [n for n in numeric_columns if n != y_var]
+                if other_nums:
+                    y2_var = st.selectbox(
+                        "Select Secondary Metric (Right Y-Axis):",  # Select secondary Y-axis numeric column
+                        other_nums,
+                        key="dual_axis_secondary_metric_select",
+                    )
+                    grouped = (
+                        clean_df.groupby(x_var)[[y_var, y2_var]].mean().reset_index()
+                    )
+
+                    fig_dyn = make_subplots(
+                        specs=[[{"secondary_y": True}]]
+                    )  # Create dual subplot
+                    fig_dyn.add_trace(
+                        go.Bar(
+                            x=grouped[x_var],
+                            y=grouped[y_var],
+                            name=f"Mean {y_var}",
+                            marker_color="royalblue",
+                        ),
+                        secondary_y=False,
+                    )
+                    fig_dyn.add_trace(
+                        go.Scatter(
+                            x=grouped[x_var],
+                            y=grouped[y2_var],
+                            name=f"Mean {y2_var}",
+                            mode="lines+markers",
+                            line=dict(color="firebrick", width=3),
+                        ),
+                        secondary_y=True,
+                    )
+
+                    fig_dyn.update_xaxes(title_text=x_var)
+                    fig_dyn.update_yaxes(
+                        title_text=f"<b>{y_var}</b>", secondary_y=False
+                    )
+                    fig_dyn.update_yaxes(
+                        title_text=f"<b>{y2_var}</b>", secondary_y=True
+                    )
+                    fig_dyn.update_layout(
+                        title=f"Dual-Axis Comparison: {y_var} vs {y2_var}"
+                    )
+                else:
+                    st.warning(
+                        "Dual-Axis Chart requires at least 2 numeric columns in the dataset."
+                    )
+                    fig_dyn = px.bar(clean_df, x=x_var, y=y_var)
+
+            # Apply white theme and height to dynamic chart
+            fig_dyn.update_layout(template="plotly_white", height=420)
+            st.plotly_chart(
+                fig_dyn, use_container_width=True
+            )  # Render chart output
+        else:
+            st.warning(
+                "Dataset needs at least one Numeric and one Categorical column for automated charting."
+            )
+
+        # Section 4 Header for Smart Automated Insights
+        st.markdown("---")
+        st.subheader("4. Automated Smart Insights ")
+
+        # Wrap Smart Insights inside a collapsed expander panel
+        with st.expander(
+            "Open / Collapse Key Insights & Takeaways", expanded=False
+        ):
+            insights = []  # Initialize empty list to hold dynamic text insights
+            if not clean_df.empty:
+                # Insight 1: Find the top performing group
+                if categorical_columns and numeric_columns:
+                    c_col, n_col = categorical_columns[0], numeric_columns[0]
+                    grp_top = (
+                        clean_df.groupby(c_col)[n_col].sum().reset_index()
+                    )  # Group and aggregate
+                    if not grp_top.empty and grp_top[n_col].notnull().any():
+                        top_row = grp_top.loc[
+                            grp_top[n_col].idxmax()
+                        ]  # Extract maximum index
+                        insights.append(
+                            f"🏆 **Top Performing Group:** Category"
+                            f" **'{top_row[c_col]}'** has the highest total"
+                            f" **{n_col}** with **{top_row[n_col]:,.2f}**."
+                        )
+
+                # Insight 2: Find the lowest performing group
+                if categorical_columns and numeric_columns:
+                    c_col, n_col = categorical_columns[0], numeric_columns[0]
+                    grp_low = (
+                        clean_df.groupby(c_col)[n_col].sum().reset_index()
+                    )  # Group and aggregate
+                    if not grp_low.empty and grp_low[n_col].notnull().any():
+                        low_row = grp_low.loc[
+                            grp_low[n_col].idxmin()
+                        ]  # Extract minimum index
+                        insights.append(
+                            f"🔻 **Lowest Performing Group:** Category"
+                            f" **'{low_row[c_col]}'** recorded the lowest total"
+                            f" **{n_col}** with **{low_row[n_col]:,.2f}**."
+                        )
+
+                # Insight 3: Metric Average & Peak calculation
+                if numeric_columns:
+                    n_col = numeric_columns[0]
+                    if clean_df[n_col].notnull().any():
+                        mean_v = clean_df[n_col].mean()  # Calculate column mean
+                        max_v = clean_df[n_col].max()  # Calculate column peak
+                        insights.append(
+                            f"📈 **Metric Average & Peak:** Overall average for"
+                            f" **{n_col}** is **{mean_v:,.2f}**, reaching a"
+                            f" maximum peak of **{max_v:,.2f}**."
+                        )
+
+                # Insight 4: Coefficient of Variation / Volatility analysis
+                if numeric_columns:
+                    n_col = numeric_columns[0]
+                    if clean_df[n_col].notnull().any():
+                        std_v = clean_df[
+                            n_col
+                        ].std()  # Calculate standard deviation
+                        mean_v = clean_df[n_col].mean()  # Calculate mean
+                        if mean_v and not np.isnan(mean_v) and mean_v != 0:
+                            cv = (
+                                std_v / mean_v
+                            ) * 100  # Calculate CV percentage
+                            insights.append(
+                                f"⚠️ **Variability Risk:** The Coefficient of"
+                                f" Variation for **{n_col}** is **{cv:.1f}%**,"
+                                " indicating"
+                                f" {'high volatility' if cv > 50 else 'stable distribution'}"
+                                " across records."
+                            )
+
+                # Insight 5: Compute most frequent category (Mode)
+                if categorical_columns:
+                    c_col = categorical_columns[0]
+                    top_cat_mode = (
+                        clean_df[c_col].mode()
+                    )  # Calculate statistical mode
+                    if not top_cat_mode.empty:
+                        mode_val = top_cat_mode[0]
+                        cnt = (clean_df[c_col] == mode_val).sum()  # Count occurrences
+                        pct = (cnt / len(clean_df)) * 100  # Compute percentage
+                        insights.append(
+                            f"🎯 **Dominant Category:** **'{mode_val}'** is the"
+                            f" most frequent entry in **{c_col}**, accounting"
+                            f" for **{pct:.1f}%** of total records."
+                        )
+
+                # Insight 6: Report missing values data cleaning impact
+                raw_nulls = raw_df.isnull().sum().sum()
+                if raw_nulls > 0:
+                    insights.append(
+                        f"🧹 **Data Cleaning Impact:** A total of **{raw_nulls:,}"
+                        " missing values** were detected and processed during"
+                        " automated cleaning."
+                    )
+                else:
+                    insights.append(
+                        "✅ **Data Integrity:** The uploaded dataset is fully"
+                        " complete with **0 missing values**."
+                    )
+
+                # Insight 7: Statistical Correlation check between numeric features
+                if len(numeric_columns) >= 2:
+                    corr_m = (
+                        clean_df[numeric_columns].corr().abs()
+                    )  # Compute absolute correlation matrix
+                    corr_array = corr_m.to_numpy(
+                        copy=True
+                    )  # Convert matrix to array
+                    np.fill_diagonal(
+                        corr_array, 0
+                    )  # Zero out self-correlation diagonal
+                    corr_m = pd.DataFrame(
+                        corr_array, index=corr_m.index, columns=corr_m.columns
+                    )
+
+                    if not corr_m.isna().all().all() and (corr_m > 0).any().any():
+                        max_corr_idx = (
+                            corr_m.unstack().idxmax()
+                        )  # Identify highest correlation pair
+                        max_corr_val = (
+                            corr_m.unstack().max()
+                        )  # Extract correlation value
+                        insights.append(
+                            "🔗 **Strongest Metric Correlation:**"
+                            f" **'{max_corr_idx[0]}'** and"
+                            f" **'{max_corr_idx[1]}'** show the strongest"
+                            " statistical relationship (R ="
+                            f" **{max_corr_val:.2f}**)."
+                        )
+
+                # Insight 8: Overall Historical Trend direction
+                if numeric_columns:
+                    n_col = numeric_columns[0]
+                    first_val = clean_df[n_col].iloc[0]  # First value
+                    last_val = clean_df[n_col].iloc[-1]  # Latest value
+                    diff = last_val - first_val  # Absolute change
+                    pct_chg = (
+                        (diff / abs(first_val) * 100) if first_val != 0 else 0
+                    )  # Percent change
+                    direction = (
+                        "increased 📈" if diff >= 0 else "decreased 📉"
+                    )  # Direction text
+                    insights.append(
+                        f"📊 **Trend Snapshot:** Across the dataset order,"
+                        f" **{n_col}** {direction} by **{abs(pct_chg):.1f}%**"
+                        " from initial to latest record."
+                    )
+
+            # Display all generated insights sequentially using info boxes
+            for ins in insights:
+                st.info(ins)
+
+        # Section 5 Header for Time Series Forecasting
+        st.markdown("---")
+        st.subheader("5. Automated 3-Year Forecasting Engine")
+
+        # Automatically detect date or time related columns
+        date_cols = [
+            c
+            for c in clean_df.columns
+            if "date" in c.lower() or "year" in c.lower() or "time" in c.lower()
+        ]
+
+        # Fallback date detection parsing strings
+        if not date_cols:
+            for col in clean_df.columns:
+                try:
+                    pd.to_datetime(clean_df[col])
+                    date_cols.append(col)
+                except Exception:
+                    pass
+
+        # Execute forecasting model if required columns exist
+        if date_cols and numeric_columns:
+            fc_c1, fc_c2 = st.columns(2)  # Create 2 layout columns
+            with fc_c1:
+                date_var = st.selectbox(
+                    "Select Time/Date Column:",  # Select date time index
+                    list(set(date_cols)),
+                    key="forecast_date_column_select",
+                )
+            with fc_c2:
+                target_var = st.selectbox(
+                    "Select Value Column to Forecast:",  # Select target numeric column
+                    numeric_columns,
+                    key="forecast_target_column_select",
+                )
+
+            # Clean and structure forecasting data
+            forecast_df = clean_df[[date_var, target_var]].dropna().copy()
+            forecast_df[date_var] = pd.to_datetime(
+                forecast_df[date_var]
+            )  # Convert to datetime format
+
+            # Fixed: Resample annually using updated pandas frequency offset 'YE'
+            forecast_df = (
+                forecast_df.set_index(date_var).resample("YE").sum().reset_index()
+            )
+
+            # Check if dataset has sufficient points (minimum 3 periods)
+            if len(forecast_df) >= 3:
+                # Fit Holt-Winters Exponential Smoothing model
+                model = ExponentialSmoothing(
+                    forecast_df[target_var],
+                    trend="add",
+                    initialization_method="estimated",
+                ).fit()
+                future_years = 3  # Set forecast horizon
+                forecast_values = model.forecast(
+                    future_years
+                )  # Generate 3-year prediction
+
+                last_year = forecast_df[date_var].max().year  # Get last year
+                future_dates = [
+                    pd.Timestamp(year=last_year + i, month=12, day=31)
+                    for i in range(1, future_years + 1)
+                ]  # Build future dates list
+
+                # Store future forecast results in dataframe
+                df_future = pd.DataFrame(
+                    {date_var: future_dates, target_var: forecast_values}
+                )
+
+                # Construct Plotly visualization figure
+                fig_fc = go.Figure()
+                fig_fc.add_trace(
+                    go.Scatter(
+                        x=forecast_df[date_var],
+                        y=forecast_df[target_var],
+                        mode="lines+markers",
+                        name="Historical Data",
+                    )
+                )
+                fig_fc.add_trace(
+                    go.Scatter(
+                        x=df_future[date_var],
+                        y=df_future[target_var],
+                        mode="lines+markers",
+                        name="3-Year Forecast",
+                        line=dict(dash="dash", color="red"),
+                    )
+                )
+                fig_fc.update_layout(
+                    title=f"3-Year Forecast for {target_var}",
+                    template="plotly_white",
+                    height=400,
+                )
+
+                st.plotly_chart(
+                    fig_fc, use_container_width=True
+                )  # Render forecasting chart
+
+                # Show projection data table inside expander
+                with st.expander("📊 View Projected Numbers"):
+                    st.dataframe(df_future, use_container_width=True)
+            else:
+                st.warning(
+                    "Forecasting requires historical data spanning at least 3 periods/years."
+                )
+        else:
+            st.info(
+                "To enable forecasting, your dataset must contain a Date/Time column and at least one Numeric target column."
+            )
+
+        # Section 6 Header for Raw Data Preview
+        st.markdown("---")
+        st.subheader("6. RAW Data Preview")
+        with st.expander("📋 View Raw Data Preview", expanded=False):
+            st.dataframe(
+                raw_df.head(10), use_container_width=True
+            )  # Display head of raw dataframe
+
+        # Section 7 Header for Exporting Clean Dataset
+        st.markdown("---")
+        st.subheader("7. Export Cleaned Dataset")
+        cleaned_csv = clean_df.to_csv(index=False).encode(
+            "utf-8"
+        )  # Convert cleaned dataframe to CSV bytes
+        st.download_button(
+            label="📥 Download Cleaned Dataset (.CSV)",  # Render file download button
+            data=cleaned_csv,
+            file_name="cleaned_dataset.csv",
+            mime="text/csv",
+            key="download_cleaned_dataset_btn",
+        )
+
+    # Catch and output any unexpected runtime errors
+    except Exception as err:
+        st.error(f"Error processing file: {err}")
+
+# Show instruction if no dataset file is uploaded yet
+else:
+    st.info(
+        "👆 Please upload a `.csv` or `.xlsx` file from the sidebar panel to activate the Dynamic Analytics Engine."
+    )
